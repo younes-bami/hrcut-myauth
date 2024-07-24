@@ -3,9 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from '../auth/auth.module';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { HttpExceptionFilter } from '../auth/common/filters/http-exception.filter';
-import { ComponentInterceptor } from '../auth/common/interceptors/component.interceptor';
-import { LoggingMiddleware } from '../auth/common/middleware/logging.middleware';
+import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
+import { ComponentInterceptor } from '../common/interceptors/component.interceptor';
+import { LoggingMiddleware } from '../common/middleware/logging.middleware';
 
 
 @Module({

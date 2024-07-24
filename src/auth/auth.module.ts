@@ -7,6 +7,8 @@ import { JwtStrategy } from './jwt.strategy';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
+
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy,RabbitMQService],
   controllers: [AuthController],
   exports: [AuthService],
 })

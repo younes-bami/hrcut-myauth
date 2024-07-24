@@ -3,9 +3,9 @@ import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
-import { createBadRequestError, createUnauthorizedError } from './common/utils/error.utils';
-import { Component } from './common/decorators/component.decorator';
-import { ComponentInterceptor } from './common/interceptors/component.interceptor';
+import { createBadRequestError, createUnauthorizedError } from '../common/utils/error.utils';
+import { Component } from '../common/decorators/component.decorator';
+import { ComponentInterceptor } from '../common/interceptors/component.interceptor';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
 
