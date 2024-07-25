@@ -37,7 +37,8 @@ export class AuthService {
       const user = await newUser.save();
 
       // Envoyer un message au microservice Customer
-      await lastValueFrom(this.rabbitMQService.emit('create_customer', { userId: user._id, ...registerUserDto }));
+      await this.rabbitMQService.sendMessage('create_customer',  { userId: user._id, ...registerUserDto });
+
 
       return user;
     } catch (error: unknown) {

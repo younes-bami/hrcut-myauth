@@ -6,6 +6,8 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
 import { ComponentInterceptor } from '../common/interceptors/component.interceptor';
 import { LoggingMiddleware } from '../common/middleware/logging.middleware';
+import { RabbitMQModule } from '../rabbitmq/rabbitmq.module'; // Import du module RabbitMQ
+import { RabbitMQService } from '../rabbitmq/rabbitmq.service'; // Import du service RabbitMQ
 
 
 @Module({
@@ -24,6 +26,8 @@ import { LoggingMiddleware } from '../common/middleware/logging.middleware';
       inject: [ConfigService],
     }),
     AuthModule,
+    RabbitMQModule, // Ajout du module RabbitMQ
+
   ],
   providers: [
     {
@@ -34,7 +38,9 @@ import { LoggingMiddleware } from '../common/middleware/logging.middleware';
       provide: APP_INTERCEPTOR,
       useClass: ComponentInterceptor,
     },
+    RabbitMQService,
   ],
+  exports: [RabbitMQService],
 })
 export class AppModule {
    configure(consumer: MiddlewareConsumer) {

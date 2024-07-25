@@ -2,12 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './main/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
 
   const config = new DocumentBuilder()
     .setTitle('Auth Service')
@@ -25,6 +27,18 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
+
+  const microservice = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
+    transport: Transport.RMQ,
+    options: {
+      urls: ['amqp://user:password@localhost:5672'],
+      queue: 'customer_queue',
+      queueOptions: {
+        durable: false,
+      },
+    },
+  });
+  await microservice.listen();
 
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe());
