@@ -17,7 +17,7 @@ export class RabbitMQService {
     return {
       transport: Transport.RMQ,
       options: {
-        urls: ['amqp://user:password@localhost:5672'],
+        urls: ['amqp://guest:guest@localhost:5672'],
         queue: 'customer_queue',
         queueOptions: {
           durable: false,
