@@ -34,7 +34,7 @@ async function bootstrap() {
       urls: ['amqp://guest:guest@localhost:5672'],
       queue: 'customer_queue',
       queueOptions: {
-        durable: false,
+        durable: true,
       },
     },
   });
