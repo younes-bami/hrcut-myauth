@@ -28,16 +28,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  const microservice = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
-    transport: Transport.RMQ,
-    options: {
-      urls: ['amqp://guest:guest@localhost:5672'],
-      queue: 'customer_queue',
-      queueOptions: {
-        durable: true,
-      },
-    },
-  });
+  const microservice = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {});
   await microservice.listen();
 
   app.enableCors();
