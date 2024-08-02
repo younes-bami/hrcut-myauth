@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import * as passport from 'passport';
 
 dotenv.config();
 

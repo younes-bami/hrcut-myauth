@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
-import { JwtStrategy } from './jwt.strategy';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -12,7 +10,6 @@ import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 
 @Module({
   imports: [
-    PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -27,7 +24,7 @@ import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
-  providers: [AuthService, JwtStrategy,RabbitMQService],
+  providers: [AuthService,RabbitMQService],
   controllers: [AuthController],
   exports: [AuthService],
 })

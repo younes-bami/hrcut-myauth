@@ -1,9 +1,9 @@
 import * as bcrypt from 'bcrypt';
-import { Injectable, InternalServerErrorException, UnauthorizedException, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, UnauthorizedException, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { JwtPayload } from './jwt-payload.interface';
+import { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { User, UserDocument } from './schemas/user.schema';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -11,9 +11,12 @@ import { createNotFoundError, createUnauthorizedError, createConflictError } fro
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import * as mongoose from 'mongoose';
 import { lastValueFrom } from 'rxjs';
+import { ExtendedRegisterUser } from '../common/interfaces/extended-register-user.interface';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly jwtService: JwtService,
@@ -36,9 +39,16 @@ export class AuthService {
       newUser.roles = ['Customer'];
       const user = await newUser.save();
 
-      // Envoyer un message au microservice Customer
-      await this.rabbitMQService.sendMessage('create_customer',  { ...registerUserDto });
-
+        // Construire le message en utilisant ExtendedRegisterUser
+        const message: ExtendedRegisterUser = {
+          authUserId: user.id,
+          ...registerUserDto,
+       
+        };
+  
+        // Envoyer un message au microservice Customer
+        await this.rabbitMQService.sendMessage('create_customer', message);
+  
 
       return user;
     } catch (error: unknown) {
@@ -111,14 +121,16 @@ export class AuthService {
 
   async validateToken(token: string): Promise<JwtPayload> {
     try {
-      return this.jwtService.verify(token);
+      this.logger.log(`Validating token: ${token}`);
+      const payload = this.jwtService.verify(token);
+      this.logger.log(`Token validated successfully: ${JSON.stringify(payload)}`);
+      return payload;
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw createUnauthorizedError('Invalid token');
-      }
-      throw new InternalServerErrorException('An unknown error occurred');
+      this.logger.error('Invalid token', (error as Error).message);
+      throw createUnauthorizedError('Invalid token');
     }
   }
+
 
   async validateUserByJwt(payload: JwtPayload): Promise<UserDocument> {
     try {

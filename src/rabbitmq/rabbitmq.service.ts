@@ -28,10 +28,10 @@ export class RabbitMQService implements OnModuleInit {
       throw new InternalServerErrorException('Failed to connect to RabbitMQ');
     }
   }
-
   async sendMessage(pattern: string, data: RegisterUserDto) {
     try {
-      const message = JSON.stringify({ pattern, data });
+      const { password, ...dataWithoutPassword } = data; // Exclure le mot de passe
+      const message = JSON.stringify({ pattern, data: dataWithoutPassword });
       this.logger.log(`Sending message: ${pattern} with data: ${message}`);
       await this.channel.publish(this.exchange, this.routingKey, Buffer.from(message), {
         persistent: true,

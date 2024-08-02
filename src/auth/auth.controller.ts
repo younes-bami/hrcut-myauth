@@ -59,7 +59,6 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Validate JWT token' })
-  @ApiBearerAuth('access-token')
   @ApiBody({ schema: { example: { token: 'your-jwt-token' } } })
   @ApiResponse({ status: 200, description: 'Token is valid.', schema: { example: { valid: true } } })
   @ApiResponse({ status: 401, description: 'Invalid token.' })
