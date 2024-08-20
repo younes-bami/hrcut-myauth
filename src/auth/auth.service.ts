@@ -194,9 +194,15 @@ export class AuthService {
         this.logger.debug(`Received refresh token: ${refreshToken}`);
 
         const payload = this.jwtService.verify(refreshToken);
+
+            // Vérification que le token a le bon scope pour être un refresh token
+        if (!payload.scopes.includes('refresh_token')) {
+          throw new UnauthorizedException('Invalid refresh token: Invalid token type');
+        }
+
+
         const user = await this.userModel.findOne({ username: payload.username }).exec();
 
-  
         if (!user) {
             this.logger.error('User not found.');
             throw new UnauthorizedException('Invalid refresh token : User Not Found');
