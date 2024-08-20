@@ -26,6 +26,10 @@ export class User {
 
   @Prop({ type: [String], default: ['Customer'] }) // Définir les rôles par défaut
   roles!: string[];
+
+  @Prop({ type: String })
+  refreshToken!: string | null;  // Stockage du refresh token
+
 }
 
 export type UserDocument = User & Document & { _id: Types.ObjectId }; // Assurez-vous que _id est de type Types.ObjectId

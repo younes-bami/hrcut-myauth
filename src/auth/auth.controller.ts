@@ -73,4 +73,20 @@ export class AuthController {
       throw new InternalServerErrorException((error as Error).message);
     }
   }
+
+  @ApiOperation({ summary: 'Refresh JWT token' })
+  @ApiBody({ schema: { example: { refresh_token: 'your-refresh-token' } } })
+  @ApiResponse({ status: 200, description: 'Tokens are refreshed.', schema: { example: { access_token: 'your-new-access-token', refresh_token: 'your-new-refresh-token' } } })
+  @ApiResponse({ status: 401, description: 'Invalid refresh token.' })
+  @Post('refresh-token')
+  async refreshToken(@Body('refresh_token') refreshToken: string) {
+    try {
+      return await this.authService.refreshAccessToken(refreshToken);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw createUnauthorizedError('Invalid refresh token');
+      }
+      throw new InternalServerErrorException((error as Error).message);
+    }
+  }
 }

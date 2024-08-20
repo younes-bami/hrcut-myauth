@@ -9,6 +9,7 @@ export interface JwtPayload {
   permissions?: string[]; // Specific permissions
   aud?: string[];           // Audience
   iss?: string;           // Issuer
+  scopes?: string[];           // scopes
   phoneNumber: string; // Ajout du numéro de téléphone
 
 }

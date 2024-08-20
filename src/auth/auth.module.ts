@@ -8,6 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 
 
+
 @Module({
   imports: [
     JwtModule.registerAsync({
