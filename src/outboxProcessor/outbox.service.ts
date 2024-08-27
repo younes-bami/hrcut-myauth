@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, ClientSession } from 'mongoose';
 import { OutboxDocument } from './schemas/outbox.schema';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 
@@ -13,15 +13,18 @@ export class OutboxService {
     private readonly rabbitMQService: RabbitMQService,
   ) {}
 
-
   async processOutboxMessages(): Promise<void> {
+    const session: ClientSession = await this.outboxModel.db.startSession();
+
     try {
+      // Start the session and transaction
+      session.startTransaction();
+
       // Retrieve all pending messages
-      const pendingMessages = await this.outboxModel.find({ status: 'PENDING' }).exec();
+      const pendingMessages = await this.outboxModel.find({ status: 'PENDING' }).session(session).exec();
 
       // Log the number of messages to process
       this.logger.log(`Found ${pendingMessages.length} pending outbox messages`);
-
 
       // Process each message one by one
       for (const message of pendingMessages) {
@@ -33,20 +36,34 @@ export class OutboxService {
           // Update status to 'PROCESSED'
           await this.outboxModel.updateOne(
             { _id: message._id },
-            { status: 'PROCESSED' }
+            { status: 'PROCESSED' },
+            { session }
           );
 
           // Log successful processing
           this.logger.log(`Message processed and marked as PROCESSED: ${message._id}`);
         } catch (error) {
-            this.logger.error(`Failed to process outbox messages ${message._id} . Error: ${error instanceof Error ? error.stack : 'Unknown error occurred.'}`);
-            // You can optionally implement retry logic here if needed
+          this.logger.error(`Failed to process message ${message._id}. Error: ${error instanceof Error ? error.stack : 'Unknown error occurred.'}`);
+          // Abort the transaction in case of failure
+          await session.abortTransaction();
+          return;  // Exit processing if a failure occurs
         }
       }
+
+      // Commit the transaction if all messages are processed successfully
+      await session.commitTransaction();
+      if (pendingMessages.length > 0 ){
+        this.logger.log('All messages processed successfully, transaction committed.');
+
+      }
+
     } catch (error) {
-      this.logger.error(`Failed to process outbox messages, rolling back transaction. Error: ${error instanceof Error ? error.stack : 'Unknown error occurred.'}`);
+      this.logger.error(`Failed to process outbox messages. Error: ${error instanceof Error ? error.stack : 'Unknown error occurred.'}`);
+      // Abort the transaction in case of any general error
+      await session.abortTransaction();
+    } finally {
+      // End the session
+      session.endSession();
     }
   }
 }
-
-

@@ -11,17 +11,30 @@ export class RabbitMQService implements OnModuleInit {
   private readonly queue = 'customer_queue';
   private readonly routingKey = 'create_customer';
 
+
+    // Define DLX and DLQ
+    private readonly deadLetterExchange = 'customer_dl_exchange';
+    private readonly deadLetterQueue = 'customer_dl_queue';
+
+
   async onModuleInit() {
     try {
       this.connection = await amqp.connect('amqp://guest:guest@localhost:5672');
       this.channel = await this.connection.createChannel();
-      await this.channel.assertExchange(this.exchange, 'direct', {
-        durable: true,
-      });
-      await this.channel.assertQueue(this.queue, {
-        durable: true,
-      });
-      await this.channel.bindQueue(this.queue, this.exchange, this.routingKey);
+
+            // Create and bind the Dead Letter Exchange and Queue
+            await this.channel.assertExchange(this.deadLetterExchange, 'direct', { durable: true });
+            await this.channel.assertQueue(this.deadLetterQueue, { durable: true });
+            await this.channel.bindQueue(this.deadLetterQueue, this.deadLetterExchange, this.routingKey);
+      
+            // Configure the main queue with a DLX
+            await this.channel.assertQueue(this.queue, {
+              durable: true,
+              deadLetterExchange: this.deadLetterExchange, // Attach DLX to the queue
+              deadLetterRoutingKey: this.routingKey,
+            });
+      
+            await this.channel.bindQueue(this.queue, this.exchange, this.routingKey);
       this.logger.log('Connected to RabbitMQ');
     } catch (error) {
       this.logger.error('Failed to connect to RabbitMQ', error);
