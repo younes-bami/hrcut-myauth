@@ -42,4 +42,17 @@ export class RabbitMQService implements OnModuleInit {
       throw new InternalServerErrorException('Failed to send message');
     }
   }
+  async onModuleDestroy() {
+    try {
+      if (this.channel) {
+        await this.channel.close();
+      }
+      if (this.connection) {
+        await this.connection.close();
+      }
+      this.logger.log('RabbitMQ connection closed');
+    } catch (error) {
+      this.logger.error('Failed to close RabbitMQ connection', error);
+    }
+  }
 }

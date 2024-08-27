@@ -4,8 +4,8 @@ import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
+import { OutboxSchema, OutboxDocument } from './schemas/outbox.schema';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 
 
 
@@ -24,8 +24,10 @@ import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
       inject: [ConfigService],
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: 'Outbox', schema: OutboxSchema }]),
+
   ],
-  providers: [AuthService,RabbitMQService],
+  providers: [AuthService],
   controllers: [AuthController],
   exports: [AuthService],
 })

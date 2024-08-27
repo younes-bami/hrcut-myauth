@@ -7,6 +7,7 @@ import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
 import { ComponentInterceptor } from '../common/interceptors/component.interceptor';
 import { LoggingMiddleware } from '../common/middleware/logging.middleware';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module'; // Import du module RabbitMQ
+import {OutboxModule}  from '../outboxProcessor/outbox.module';
 import { RabbitMQService } from '../rabbitmq/rabbitmq.service'; // Import du service RabbitMQ
 
 
@@ -15,18 +16,16 @@ import { RabbitMQService } from '../rabbitmq/rabbitmq.service'; // Import du ser
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        const uri = configService.get<string>('MONGODB_URI');
-        return {
-          uri,
-        };
-      },
+      MongooseModule.forRootAsync({
+        imports: [ConfigModule],
+        useFactory: async (configService: ConfigService) => ({
+          uri: configService.get<string>('MONGODB_URI'),
+        }),
       inject: [ConfigService],
     }),
     AuthModule,
     RabbitMQModule, // Ajout du module RabbitMQ
+    OutboxModule,  // Add the OutboxModule here
 
   ],
   providers: [

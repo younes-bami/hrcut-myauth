@@ -28,8 +28,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  const microservice = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {});
-  await microservice.listen();
+  //const microservice = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {});
+  //await microservice.listen();
 
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe());

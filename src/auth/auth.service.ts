@@ -1,17 +1,20 @@
 import * as bcrypt from 'bcrypt';
 import { Injectable, InternalServerErrorException, UnauthorizedException, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
+import { InjectModel,InjectConnection } from '@nestjs/mongoose';
+import {Connection} from 'mongoose';
 import { Model, Types } from 'mongoose';
 import { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { User, UserDocument } from './schemas/user.schema';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { createNotFoundError, createUnauthorizedError, createConflictError } from '../common/utils/error.utils';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 import * as mongoose from 'mongoose';
 import { lastValueFrom } from 'rxjs';
 import { ExtendedRegisterUser } from '../common/interfaces/extended-register-user.interface';
+import { OutboxDocument } from './schemas/outbox.schema';
+
+
 
 @Injectable()
 export class AuthService {
@@ -19,39 +22,66 @@ export class AuthService {
 
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel('Outbox') private outboxModel: Model<OutboxDocument>,  // Injecting the Outbox model
+    @InjectConnection() private readonly connection: Connection,
     private readonly jwtService: JwtService,
-    private readonly rabbitMQService: RabbitMQService,
   ) {}
 
   async register(registerUserDto: RegisterUserDto): Promise<User> {
+    const session = await this.connection.startSession();
+    session.startTransaction();
+  
+    this.logger.log('Transaction started for user registration');
+  
     try {
       const { username, email, phoneNumber, password } = registerUserDto;
-      const existingUser = await this.userModel.findOne({ $or: [{ username }, { email }, { phoneNumber }] }).exec();
-
+      this.logger.log(`Checking if user with username: ${username}, email: ${email}, or phoneNumber: ${phoneNumber} already exists`);
+  
+      const existingUser = await this.userModel.findOne({
+        $or: [{ username }, { email }, { phoneNumber }],
+      }).session(session).exec();
+  
       if (existingUser) {
+        this.logger.warn('User already exists, aborting registration');
         throw createConflictError('User already exists with provided email, username, or phone number');
       }
-
+  
+      this.logger.log('User does not exist, proceeding with registration');
+  
       const hashedPassword = await bcrypt.hash(password, 10);
+      this.logger.log('Password hashed successfully');
+  
       const newUser = new this.userModel({ ...registerUserDto, password: hashedPassword });
-
-      // Attribuer automatiquement le rôle "Customer"
       newUser.roles = ['Customer'];
-      const user = await newUser.save();
-
-        // Construire le message en utilisant ExtendedRegisterUser
-        const message: ExtendedRegisterUser = {
+      this.logger.log('New user created, saving to database');
+  
+      const user = await newUser.save({ session });
+      this.logger.log(`User saved successfully: ${JSON.stringify(user)}`);
+  
+      // Writing the message to the Outbox
+      this.logger.log('Creating outbox message');
+      const outboxMessage = new this.outboxModel({
+        eventType: 'create_customer',
+        payload: {
           authUserId: user.id,
           ...registerUserDto,
-       
-        };
+        },
+        status: 'PENDING',
+      });
   
-        // Envoyer un message au microservice Customer
-        await this.rabbitMQService.sendMessage('create_customer', message);
+      this.logger.log('Saving outbox message');
+      await outboxMessage.save({ session });
+      this.logger.log('Outbox message saved successfully');
   
-
+      await session.commitTransaction();
+      this.logger.log('Transaction committed successfully');
+  
       return user;
     } catch (error: unknown) {
+      this.logger.error('Error during transaction, aborting', error);
+      await session.abortTransaction();
+      session.endSession();
+  
       if (error instanceof ConflictException) {
         throw error;
       }
@@ -59,8 +89,14 @@ export class AuthService {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException('An unknown error occurred');
+    } finally {
+      session.endSession();
+      this.logger.log('Transaction session ended');
     }
   }
+  
+  
+
 
   async validateUser(username: string, pass: string): Promise<Omit<UserDocument, 'password'>> {
     try {
