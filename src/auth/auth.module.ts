@@ -6,6 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
 import { OutboxSchema, OutboxDocument } from './schemas/outbox.schema';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { createJwtOptions } from '../common/configs/jwt.config';
 
 
 
@@ -13,15 +14,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   imports: [
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: '1h',
-          issuer: 'auth-service', // Vérifiez l'issuer
-          audience: 'my-app', // Vérifiez l'audience
-        },
-      }),
       inject: [ConfigService],
+      useFactory: createJwtOptions,
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     MongooseModule.forFeature([{ name: 'Outbox', schema: OutboxSchema }]),
