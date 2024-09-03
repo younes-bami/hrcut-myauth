@@ -32,8 +32,12 @@ async function bootstrap() {
   //await microservice.listen();
 
   app.enableCors();
-  app.useGlobalPipes(new ValidationPipe());
-
+  //app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,  // Strips out properties that are not in the DTO
+    forbidNonWhitelisted: true,  // Throws an error if unknown properties are present
+    transform: true,  // Automatically transforms the payloads to be objects typed according to their DTO classes
+  })); 
   await app.listen(3001); // Port dédié pour le auth-service
 }
 bootstrap();

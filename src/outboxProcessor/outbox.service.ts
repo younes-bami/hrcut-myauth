@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession } from 'mongoose';
 import { OutboxDocument } from './schemas/outbox.schema';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
+import { RabbitMQProdcuerService } from '../rabbitmq/rabbitmq.producer/rabbitmq.producer.service';
 
 @Injectable()
 export class OutboxService {
@@ -10,7 +10,7 @@ export class OutboxService {
 
   constructor(
     @InjectModel('Outbox') private readonly outboxModel: Model<OutboxDocument>,
-    private readonly rabbitMQService: RabbitMQService,
+    private readonly rabbitMQService: RabbitMQProdcuerService,
   ) {}
 
   async processOutboxMessages(): Promise<void> {

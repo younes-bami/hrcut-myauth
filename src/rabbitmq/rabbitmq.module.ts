@@ -1,11 +1,13 @@
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { RabbitMQService } from './rabbitmq.service';
+import { RabbitMQProdcuerService } from './rabbitmq.producer/rabbitmq.producer.service';
+import { RabbitMQConsumerService } from './rabbitmq.consumer/rabbitmq.consumer.service';
+import { AuthModule } from '../auth/auth.module';
 
 @Global()  // <-- Marking the module as global
 @Module({
-  imports: [ConfigModule],
-  providers: [RabbitMQService],
-  exports: [RabbitMQService],
+  imports: [ConfigModule,AuthModule],
+  providers: [RabbitMQProdcuerService,RabbitMQConsumerService],
+  exports: [RabbitMQProdcuerService,RabbitMQConsumerService],
 })
 export class RabbitMQModule {}

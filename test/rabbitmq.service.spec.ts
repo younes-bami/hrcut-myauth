@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RabbitmqService } from '../src/rabbitmq/rabbitmq.service';
+import { RabbitmqService } from './rabbitmq/rabbitmq.producer/rabbitmq.producer.service';
 
 describe('RabbitmqService', () => {
   let service: RabbitmqService;

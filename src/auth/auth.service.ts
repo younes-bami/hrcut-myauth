@@ -13,6 +13,7 @@ import * as mongoose from 'mongoose';
 import { lastValueFrom } from 'rxjs';
 import { ExtendedRegisterUser } from '../common/interfaces/extended-register-user.interface';
 import { OutboxDocument } from './schemas/outbox.schema';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 
 
@@ -313,5 +314,90 @@ export class AuthService {
 }
 
 
-  
+/**
+   * Met à jour les informations d'un utilisateur basé sur authUserId.
+   * @param authUserId - L'identifiant unique de l'utilisateur dans le service Auth.
+   * @param updateUserDto - Les données de mise à jour.
+   * @returns L'utilisateur mis à jour.
+   * @throws NotFoundException si l'utilisateur n'est pas trouvé.
+   * @throws ConflictException si l'email ou le numéro de téléphone est déjà utilisé.
+   * @throws InternalServerErrorException pour les autres erreurs.
+   */
+async updateUserByAuthId(authUserId: string, updateUserDto: UpdateUserDto): Promise<User> {
+  const session = await this.connection.startSession();
+  session.startTransaction();
+
+  this.logger.log(`Transaction started for updating user with authUserId: ${authUserId}`);
+
+  try {
+    const existingUser = await this.userModel.findById(authUserId).session(session).exec();
+
+    if (!existingUser) {
+      this.logger.warn(`User not found with authUserId: ${authUserId}`);
+      throw createNotFoundError('User', authUserId);
+    }
+
+    // Vérifier les conflits d'email
+    if (
+      updateUserDto.email &&
+      updateUserDto.email !== existingUser.email
+    ) {
+      const emailExists = await this.userModel.findOne({ email: updateUserDto.email }).session(session).exec();
+      if (emailExists) {
+        this.logger.warn(`Email already exists: ${updateUserDto.email}`);
+        throw createConflictError('User avec cet email existe déjà');
+      }
+    }
+
+    // Vérifier les conflits de numéro de téléphone
+    if (
+      updateUserDto.phoneNumber &&
+      updateUserDto.phoneNumber !== existingUser.phoneNumber
+    ) {
+      const phoneNumberExists = await this.userModel.findOne({ phoneNumber: updateUserDto.phoneNumber }).session(session).exec();
+      if (phoneNumberExists) {
+        this.logger.warn(`Phone number already exists: ${updateUserDto.phoneNumber}`);
+        throw createConflictError('User avec ce numéro de téléphone existe déjà');
+      }
+    }
+
+    // Si le mot de passe est mis à jour, le hacher
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    // Assignation des nouvelles valeurs depuis le DTO
+    Object.assign(existingUser, updateUserDto);
+
+    // Sauvegarder l'utilisateur mis à jour dans la session
+    const updatedUser = await existingUser.save({ session });
+
+    this.logger.log(`User updated successfully: ${JSON.stringify(updatedUser)}`);
+
+    // Commit de la transaction
+    await session.commitTransaction();
+    this.logger.log('Transaction committed successfully');
+
+    return updatedUser;
+  } catch (error) {
+    this.logger.error('Error updating user, aborting transaction', error);
+    await session.abortTransaction();
+
+    if (error instanceof NotFoundException || error instanceof ConflictException) {
+      throw error;
+    }
+
+    if (error instanceof Error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    throw new InternalServerErrorException('Une erreur inconnue est survenue');
+  } finally {
+    session.endSession();
+    this.logger.log(`Transaction session ended for authUserId: ${authUserId}`);
+  }
+}
+
+
+
 }

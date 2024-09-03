@@ -8,7 +8,7 @@ import { ComponentInterceptor } from '../common/interceptors/component.intercept
 import { LoggingMiddleware } from '../common/middleware/logging.middleware';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module'; // Import du module RabbitMQ
 import {OutboxModule}  from '../outboxProcessor/outbox.module';
-import { RabbitMQService } from '../rabbitmq/rabbitmq.service'; // Import du service RabbitMQ
+import { RabbitMQProdcuerService } from '../rabbitmq/rabbitmq.producer/rabbitmq.producer.service'; // Import du service RabbitMQ
 
 
 @Module({
@@ -37,9 +37,9 @@ import { RabbitMQService } from '../rabbitmq/rabbitmq.service'; // Import du ser
       provide: APP_INTERCEPTOR,
       useClass: ComponentInterceptor,
     },
-    RabbitMQService,
+    RabbitMQProdcuerService,
   ],
-  exports: [RabbitMQService],
+  exports: [RabbitMQProdcuerService],
 })
 export class AppModule {
    configure(consumer: MiddlewareConsumer) {
